@@ -4,10 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="2b848f57-5911-44ac-8b90-e25051547bdf" name="Changes" comment="Guardando proyecto completo antes de Implemnetaciones de funcionalidd">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/CurrencyConverter.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/CurrencyConverter.java" afterDir="false" />
-    </list>
+    <list default="true" id="2b848f57-5911-44ac-8b90-e25051547bdf" name="Changes" comment="nueva implementacion" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -79,11 +76,28 @@
       <option name="project" value="LOCAL" />
       <updated>1719544988323</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="nueva implementacion">
+      <option name="closed" value="true" />
+      <created>1719548244079</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1719548244079</updated>
+    </task>
+    <task id="LOCAL-00004" summary="nueva implementacion">
+      <option name="closed" value="true" />
+      <created>1719548316813</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1719548316813</updated>
+    </task>
+    <option name="localTasksCounter" value="5" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Guardando proyecto completo antes de Implemnetaciones de funcionalidd" />
-    <option name="LAST_COMMIT_MESSAGE" value="Guardando proyecto completo antes de Implemnetaciones de funcionalidd" />
+    <MESSAGE value="nueva implementacion" />
+    <option name="LAST_COMMIT_MESSAGE" value="nueva implementacion" />
   </component>
 </project>
