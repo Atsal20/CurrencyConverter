@@ -71,70 +71,58 @@ public class CurrencyConverter {
 
     public static double convertCurrency(String fromCurrency, String toCurrency, double amount) throws Exception {
         String url = BASE_URL + readApiKey() + "/latest/" + fromCurrency;
-        HttpClient client = HttpClient.newHttpClient(); // Mueve esta línea fuera del try-with-resources
+        HttpClient client = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .build();
 
-        try (HttpRequest request = HttpRequest.newBuilder()
-               .uri(URI.create(url))
-               .build()) { // Mantén esto dentro del try-with-resources
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
-            if (response.statusCode()!= 200) {
-                throw new CustomException("Failed to get response from the API: " + response.body());
-            }
-
-            Gson gson = new Gson();
-            JsonObject jsonResponse = gson.fromJson(response.body(), JsonObject.class);
-            JsonObject conversionRates = jsonResponse.getAsJsonObject("conversion_rates");
-
-            if (!conversionRates.has(toCurrency)) {
-                throw new CustomException("Invalid currency code: " + toCurrency);
-            }
-
-            double rate = conversionRates.get(toCurrency).getAsDouble();
-            return amount * rate;
-        } catch (Exception e) {
-            throw new CustomException("Error converting currency: " + e.getMessage());
-        } finally {
-            client.close(); // Cierra el HttpClient aquí
+        if (response.statusCode() != 200) {
+            throw new CustomException("Failed to get response from the API: " + response.body());
         }
-    }
 
+        Gson gson = new Gson();
+        JsonObject jsonResponse = gson.fromJson(response.body(), JsonObject.class);
+        JsonObject conversionRates = jsonResponse.getAsJsonObject("conversion_rates");
+
+        if (!conversionRates.has(toCurrency)) {
+            throw new CustomException("Invalid currency code: " + toCurrency);
+        }
+
+        double rate = conversionRates.get(toCurrency).getAsDouble();
+        return amount * rate;
+    }
 
     private static String getCurrencyCodeFromAPI(String countryCode) throws Exception {
         String url = COUNTRIES_API_URL + "/name/" + countryCode;
-        HttpClient client = HttpClient.newHttpClient(); // Mueve esta línea fuera del try-with-resources
+        HttpClient client = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .build();
 
-        try (HttpRequest request = HttpRequest.newBuilder()
-               .uri(URI.create(url))
-               .build()) { // Mantén esto dentro del try-with-resources
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
-            if (response.statusCode()!= 200) {
-                throw new CustomException("Failed to get response from the API: " + response.body());
-            }
-
-            Gson gson = new Gson();
-            JsonElement jsonResponse = gson.fromJson(response.body(), JsonElement.class);
-
-            if (jsonResponse.isJsonArray()) {
-                JsonArray jsonArray = jsonResponse.getAsJsonArray();
-                if (jsonArray.size() == 0) {
-                    throw new CustomException("No se encontró información para el país: " + countryCode);
-                }
-                JsonObject firstResult = jsonArray.get(0).getAsJsonObject();
-                JsonObject currencyObj = firstResult.getAsJsonObject("currencies");
-                String currencyCode = currencyObj.keySet().iterator().next();
-                return currencyCode;
-            } else {
-                throw new CustomException("Respuesta inesperada de la API: " + jsonResponse);
-            }
-        } catch (Exception e) {
-            throw new CustomException("Error getting currency code: " + e.getMessage());
-        } finally {
-            client.close(); // Cierra el HttpClient aquí
+        if (response.statusCode() != 200) {
+            throw new CustomException("Failed to get response from the API: " + response.body());
         }
-}
 
+        Gson gson = new Gson();
+        JsonElement jsonResponse = gson.fromJson(response.body(), JsonElement.class);
+
+        if (jsonResponse.isJsonArray()) {
+            JsonArray jsonArray = jsonResponse.getAsJsonArray();
+            if (jsonArray.size() == 0) {
+                throw new CustomException("No se encontró información para el país: " + countryCode);
+            }
+            JsonObject firstResult = jsonArray.get(0).getAsJsonObject();
+            JsonObject currencyObj = firstResult.getAsJsonObject("currencies");
+            String currencyCode = currencyObj.keySet().iterator().next();
+            return currencyCode;
+        } else {
+            throw new CustomException("Respuesta inesperada de la API: " + jsonResponse);
+        }
+    }
 
     private enum ConversionOption {
         EUR_TO_USD("EUR", "USD"),
