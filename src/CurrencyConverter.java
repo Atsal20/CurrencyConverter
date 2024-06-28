@@ -43,12 +43,10 @@ public class CurrencyConverter {
                 } else if (option == ConversionOption.CUSTOM) {
                     handleCustomOption(scanner);
                 } else {
-                    String fromCurrency = getCurrencyCodeFromAPI(option.getFromCurrency());
-                    String toCurrency = getCurrencyCodeFromAPI(option.getToCurrency());
-                    System.out.print("Ingrese la cantidad a convertir: ");
+                    System.out.print("Ingrese la cantidad a convertir de " + option.getFromCurrency() + " a " + option.getToCurrency() + ": ");
                     double amount = Double.parseDouble(scanner.nextLine());
-                    double convertedAmount = convertCurrency(fromCurrency, toCurrency, amount);
-                    System.out.printf("%.2f %s = %.2f %s%n", amount, fromCurrency, convertedAmount, toCurrency);
+                    double convertedAmount = convertCurrency(option.getFromCurrency(), option.getToCurrency(), amount);
+                    System.out.printf("%.2f %s = %.2f %s%n", amount, option.getFromCurrency(), convertedAmount, option.getToCurrency());
                 }
             } catch (Exception e) {
                 System.out.println("Error: " + e.getMessage());
@@ -65,7 +63,9 @@ public class CurrencyConverter {
     private static void printOptions() {
         System.out.println("Seleccione una opción:");
         for (ConversionOption option : ConversionOption.values()) {
-            System.out.println(option.ordinal() + ". " + option.name());
+            if (option != ConversionOption.EXIT) {
+                System.out.println(option.ordinal() + ". " + option.name());
+            }
         }
         System.out.print("Opción: ");
     }
@@ -178,8 +178,8 @@ public class CurrencyConverter {
         USD_TO_MXN("USD", "MXN"),
         MXN_TO_EUR("MXN", "EUR"),
         MXN_TO_USD("MXN", "USD"),
-        CUSTOM("CUSTOM", "CUSTOM"),
-        EXIT("", "");
+        CUSTOM("Personalizada", "Personalizada"),
+        EXIT("Salir", "");
 
         private final String fromCurrency;
         private final String toCurrency;
@@ -215,4 +215,3 @@ public class CurrencyConverter {
         }
     }
 }
-
