@@ -10,15 +10,24 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.Properties;
-import java.util.Scanner;
-import java.util.Set;
+import java.time.Duration;
+import java.util.*;
 
 public class CurrencyConverter {
 
     private static final String BASE_URL = "https://v6.exchangerate-api.com/v6/";
-    private static final String COUNTRIES_API_URL = "https://restcountries.com/v3.1";
     private static final String CONFIG_FILE_PATH = "config.properties";
+
+    // Instancia global de HttpClient para reutilización
+    private static final HttpClient httpClient = HttpClient.newBuilder()
+           .version(HttpClient.Version.HTTP_2)
+           .connectTimeout(Duration.ofSeconds(30))
+           .build();
+
+    // Caché para almacenar los códigos de moneda
+    private static final Map<String, Set<String>> cache = new HashMap<>();
+    private static long lastUpdate = System.currentTimeMillis();
+    private static final long CACHE_UPDATE_INTERVAL = 60 * 1000; // 1 minuto
 
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
@@ -42,10 +51,18 @@ public class CurrencyConverter {
                 } else if (option == ConversionOption.CUSTOM) {
                     handleCustomOption(scanner);
                 } else {
-                    System.out.print("Ingrese la cantidad a convertir de " + option.getFromCurrency() + " a " + option.getToCurrency() + ": ");
-                    double amount = Double.parseDouble(scanner.nextLine());
-                    double convertedAmount = convertCurrency(option.getFromCurrency(), option.getToCurrency(), amount);
-                    System.out.printf("%.2f %s = %.2f %s%n", amount, option.getFromCurrency(), convertedAmount, option.getToCurrency());
+                    while (true) {
+                        System.out.print("Ingrese la cantidad a convertir de " + option.getFromCurrency() + " a " + option.getToCurrency() + ": ");
+                        String amountStr = scanner.nextLine();
+                        if (!isNumeric(amountStr)) {
+                            System.out.println("Favor de digitar una cantidad numérica");
+                        } else {
+                            double amount = Double.parseDouble(amountStr);
+                            double convertedAmount = convertCurrency(option.getFromCurrency(), option.getToCurrency(), amount);
+                            System.out.printf("%.2f %s = %.2f %s%n", amount, option.getFromCurrency(), convertedAmount, option.getToCurrency());
+                            break;
+                        }
+                    }
                 }
             } catch (Exception e) {
                 System.out.println("Error: " + e.getMessage());
@@ -71,6 +88,15 @@ public class CurrencyConverter {
         return opcion >= 0 && opcion < ConversionOption.values().length;
     }
 
+    private static boolean isNumeric(String str){
+        try {
+            Double.parseDouble(str);
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
     private static void handleCustomOption(Scanner scanner) throws Exception {
         System.out.println("Lista de todas las monedas disponibles:");
         Set<String> currencies = getAllCurrencies();
@@ -78,26 +104,44 @@ public class CurrencyConverter {
             System.out.println(currency);
         }
 
-        System.out.print("Ingrese la moneda de origen: ");
-        String fromCurrency = scanner.nextLine().toUpperCase();
-        System.out.print("Ingrese la moneda de destino: ");
-        String toCurrency = scanner.nextLine().toUpperCase();
-        System.out.print("Ingrese la cantidad a convertir: ");
-        double amount = Double.parseDouble(scanner.nextLine());
-        double convertedAmount = convertCurrency(fromCurrency, toCurrency, amount);
-        System.out.printf("%.2f %s = %.2f %s%n", amount, fromCurrency, convertedAmount, toCurrency);
+        String fromCurrency;
+        String toCurrency;
+        while (true) {
+            System.out.print("Ingrese la moneda de origen: ");
+            fromCurrency = scanner.nextLine().toUpperCase();
+            System.out.print("Ingrese la moneda de destino: ");
+            toCurrency = scanner.nextLine().toUpperCase();
+            if (!currencies.contains(fromCurrency) || !currencies.contains(toCurrency)) {
+                System.out.println("Moneda no encontrada. Intente de nuevo.");
+            } else {
+                break;
+            }
+        }
+
+        while (true) {
+            System.out.print("Ingrese la cantidad a convertir: ");
+            String amountStr = scanner.nextLine();
+            if (!isNumeric(amountStr)) {
+                System.out.println("Favor de digitar una cantidad numérica.");
+            } else {
+                double amount = Double.parseDouble(amountStr);
+                double convertedAmount = convertCurrency(fromCurrency, toCurrency, amount);
+                System.out.printf("%.2f %s = %.2f %s%n", amount, fromCurrency, convertedAmount, toCurrency);
+                break;
+            }
+        }
     }
 
     public static double convertCurrency(String fromCurrency, String toCurrency, double amount) throws Exception {
         String url = BASE_URL + readApiKey() + "/latest/" + fromCurrency;
-        HttpClient client = HttpClient.newHttpClient();
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(url))
-                .build();
+               .uri(URI.create(url))
+               .GET()
+               .build();
 
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
-        if (response.statusCode() != 200) {
+        if (response.statusCode()!= 200) {
             throw new CustomException("Failed to get response from the API: " + response.body());
         }
 
@@ -113,46 +157,21 @@ public class CurrencyConverter {
         return amount * rate;
     }
 
-    private static String getCurrencyCodeFromAPI(String countryCode) throws Exception {
-        String url = COUNTRIES_API_URL + "/name/" + countryCode;
-        HttpClient client = HttpClient.newHttpClient();
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(url))
-                .build();
-
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-
-        if (response.statusCode() != 200) {
-            throw new CustomException("Failed to get response from the API: " + response.body());
-        }
-
-        Gson gson = new Gson();
-        JsonElement jsonResponse = gson.fromJson(response.body(), JsonElement.class);
-
-        if (jsonResponse.isJsonArray()) {
-            JsonArray jsonArray = jsonResponse.getAsJsonArray();
-            if (jsonArray.size() == 0) {
-                throw new CustomException("No se encontró información para el país: " + countryCode);
-            }
-            JsonObject firstResult = jsonArray.get(0).getAsJsonObject();
-            JsonObject currencyObj = firstResult.getAsJsonObject("currencies");
-            String currencyCode = currencyObj.keySet().iterator().next();
-            return currencyCode;
-        } else {
-            throw new CustomException("Respuesta inesperada de la API: " + jsonResponse);
-        }
-    }
-
     private static Set<String> getAllCurrencies() throws Exception {
+        // Verificar si los datos están en caché y son recientes
+        if (cache.containsKey("allCurrencies") && System.currentTimeMillis() - lastUpdate < CACHE_UPDATE_INTERVAL) {
+            return cache.get("allCurrencies");
+        }
+
         String url = BASE_URL + readApiKey() + "/codes";
-        HttpClient client = HttpClient.newHttpClient();
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(url))
-                .build();
+               .uri(URI.create(url))
+               .GET()
+               .build();
 
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
-        if (response.statusCode() != 200) {
+        if (response.statusCode()!= 200) {
             throw new CustomException("Failed to get response from the API: " + response.body());
         }
 
@@ -160,11 +179,16 @@ public class CurrencyConverter {
         JsonObject jsonResponse = gson.fromJson(response.body(), JsonObject.class);
         JsonArray supportedCodes = jsonResponse.getAsJsonArray("supported_codes");
 
-        Set<String> currencies = new java.util.HashSet<>();
+        Set<String> currencies = new HashSet<>();
         for (JsonElement element : supportedCodes) {
             JsonArray currencyArray = element.getAsJsonArray();
             currencies.add(currencyArray.get(0).getAsString());
         }
+
+        // Almacenar los datos en caché
+        cache.put("allCurrencies", currencies);
+        lastUpdate = System.currentTimeMillis();
+
         return currencies;
     }
 
