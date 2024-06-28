@@ -28,7 +28,7 @@ public class CurrencyConverter {
         while (continuar) {
             printOptions();
             int opcion = scanner.nextInt();
-            scanner.nextLine();  // Consume the newline
+            scanner.nextLine();
             if (!isValidInput(opcion)) {
                 System.out.println("Entrada inválida. Por favor, seleccione una opción válida.");
                 continue;
@@ -38,7 +38,6 @@ public class CurrencyConverter {
             try {
                 if (option == ConversionOption.EXIT) {
                     continuar = false;
-                    System.out.println("Gracias por usar el Conversor de Moneda. ¡Adiós!");
                     break;
                 } else if (option == ConversionOption.CUSTOM) {
                     handleCustomOption(scanner);
@@ -63,9 +62,7 @@ public class CurrencyConverter {
     private static void printOptions() {
         System.out.println("Seleccione una opción:");
         for (ConversionOption option : ConversionOption.values()) {
-            if (option != ConversionOption.EXIT) {
-                System.out.println(option.ordinal() + ". " + option.name());
-            }
+            System.out.println(option.ordinal() + ". " + option.name());
         }
         System.out.print("Opción: ");
     }
@@ -179,7 +176,7 @@ public class CurrencyConverter {
         MXN_TO_EUR("MXN", "EUR"),
         MXN_TO_USD("MXN", "USD"),
         CUSTOM("Personalizada", "Personalizada"),
-        EXIT("Salir", "");
+        EXIT("", "");
 
         private final String fromCurrency;
         private final String toCurrency;
