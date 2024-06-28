@@ -12,6 +12,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Properties;
 import java.util.Scanner;
+import java.util.Set;
 
 public class CurrencyConverter {
 
@@ -27,23 +28,28 @@ public class CurrencyConverter {
         while (continuar) {
             printOptions();
             int opcion = scanner.nextInt();
+            scanner.nextLine();  // Consume the newline
             if (!isValidInput(opcion)) {
                 System.out.println("Entrada inválida. Por favor, seleccione una opción válida.");
                 continue;
             }
             ConversionOption option = ConversionOption.values()[opcion];
 
-            if (option == ConversionOption.EXIT) {
-                System.out.println("Gracias por usar nuestra API\n");
-                continuar = false;
-                break;
-            }
             try {
-                String fromCurrency = getCurrencyCodeFromAPI(option.getFromCurrency());
-                String toCurrency = getCurrencyCodeFromAPI(option.getToCurrency());
-                double amount = Double.parseDouble(scanner.nextLine());
-                double convertedAmount = convertCurrency(fromCurrency, toCurrency, amount);
-                System.out.printf("%.2f %s = %.2f %s%n", amount, fromCurrency, convertedAmount, toCurrency);
+                if (option == ConversionOption.EXIT) {
+                    continuar = false;
+                    System.out.println("Gracias por usar el Conversor de Moneda. ¡Adiós!");
+                    break;
+                } else if (option == ConversionOption.CUSTOM) {
+                    handleCustomOption(scanner);
+                } else {
+                    String fromCurrency = getCurrencyCodeFromAPI(option.getFromCurrency());
+                    String toCurrency = getCurrencyCodeFromAPI(option.getToCurrency());
+                    System.out.print("Ingrese la cantidad a convertir: ");
+                    double amount = Double.parseDouble(scanner.nextLine());
+                    double convertedAmount = convertCurrency(fromCurrency, toCurrency, amount);
+                    System.out.printf("%.2f %s = %.2f %s%n", amount, fromCurrency, convertedAmount, toCurrency);
+                }
             } catch (Exception e) {
                 System.out.println("Error: " + e.getMessage());
             }
@@ -61,12 +67,28 @@ public class CurrencyConverter {
         for (ConversionOption option : ConversionOption.values()) {
             System.out.println(option.ordinal() + ". " + option.name());
         }
-        System.out.println("0. Salir");
         System.out.print("Opción: ");
     }
 
     private static boolean isValidInput(int opcion) {
         return opcion >= 0 && opcion < ConversionOption.values().length;
+    }
+
+    private static void handleCustomOption(Scanner scanner) throws Exception {
+        System.out.println("Lista de todas las monedas disponibles:");
+        Set<String> currencies = getAllCurrencies();
+        for (String currency : currencies) {
+            System.out.println(currency);
+        }
+
+        System.out.print("Ingrese la moneda de origen: ");
+        String fromCurrency = scanner.nextLine().toUpperCase();
+        System.out.print("Ingrese la moneda de destino: ");
+        String toCurrency = scanner.nextLine().toUpperCase();
+        System.out.print("Ingrese la cantidad a convertir: ");
+        double amount = Double.parseDouble(scanner.nextLine());
+        double convertedAmount = convertCurrency(fromCurrency, toCurrency, amount);
+        System.out.printf("%.2f %s = %.2f %s%n", amount, fromCurrency, convertedAmount, toCurrency);
     }
 
     public static double convertCurrency(String fromCurrency, String toCurrency, double amount) throws Exception {
@@ -124,6 +146,31 @@ public class CurrencyConverter {
         }
     }
 
+    private static Set<String> getAllCurrencies() throws Exception {
+        String url = BASE_URL + readApiKey() + "/codes";
+        HttpClient client = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .build();
+
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+        if (response.statusCode() != 200) {
+            throw new CustomException("Failed to get response from the API: " + response.body());
+        }
+
+        Gson gson = new Gson();
+        JsonObject jsonResponse = gson.fromJson(response.body(), JsonObject.class);
+        JsonArray supportedCodes = jsonResponse.getAsJsonArray("supported_codes");
+
+        Set<String> currencies = new java.util.HashSet<>();
+        for (JsonElement element : supportedCodes) {
+            JsonArray currencyArray = element.getAsJsonArray();
+            currencies.add(currencyArray.get(0).getAsString());
+        }
+        return currencies;
+    }
+
     private enum ConversionOption {
         EUR_TO_USD("EUR", "USD"),
         EUR_TO_MXN("EUR", "MXN"),
@@ -168,3 +215,4 @@ public class CurrencyConverter {
         }
     }
 }
+
