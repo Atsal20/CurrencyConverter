@@ -75,7 +75,7 @@ public class CurrencyConverter {
         System.out.println("Programa finalizado. Gracias por usar la API!");
         scanner.close();
     }
-
+// Método para imprimir las opciones disponibles al usuario
     private static void printOptions() {
         System.out.println("Seleccione una opción:");
         for (ConversionOption option : ConversionOption.values()) {
@@ -83,11 +83,11 @@ public class CurrencyConverter {
         }
         System.out.print("Opción: ");
     }
-
+// Método para validar la entrada del usuario
     private static boolean isValidInput(int opcion) {
         return opcion >= 0 && opcion < ConversionOption.values().length;
     }
-
+// Método para verificar si una cadena es numérica
     private static boolean isNumeric(String str){
         try {
             Double.parseDouble(str);
@@ -96,7 +96,7 @@ public class CurrencyConverter {
             return false;
         }
     }
-
+// Maneja la opción personalizada de conversión de moneda
     private static void handleCustomOption(Scanner scanner) throws Exception {
         System.out.println("Lista de todas las monedas disponibles:");
         Set<String> currencies = getAllCurrencies();
@@ -131,7 +131,7 @@ public class CurrencyConverter {
             }
         }
     }
-
+ // Método para convertir la moneda
     public static double convertCurrency(String fromCurrency, String toCurrency, double amount) throws Exception {
         String url = BASE_URL + readApiKey() + "/latest/" + fromCurrency;
         HttpRequest request = HttpRequest.newBuilder()
@@ -156,7 +156,7 @@ public class CurrencyConverter {
         double rate = conversionRates.get(toCurrency).getAsDouble();
         return amount * rate;
     }
-
+// Método para obtener todas las monedas disponibles
     private static Set<String> getAllCurrencies() throws Exception {
         // Verificar si los datos están en caché y son recientes
         if (cache.containsKey("allCurrencies") && System.currentTimeMillis() - lastUpdate < CACHE_UPDATE_INTERVAL) {
@@ -191,7 +191,7 @@ public class CurrencyConverter {
 
         return currencies;
     }
-
+// Enumeración de opciones de conversión
     private enum ConversionOption {
         EUR_TO_USD("EUR", "USD"),
         EUR_TO_MXN("EUR", "MXN"),
@@ -218,13 +218,13 @@ public class CurrencyConverter {
             return toCurrency;
         }
     }
-
+// Excepción personalizada para manejar errores específicos de la conversión de moneda
     static class CustomException extends Exception {
         public CustomException(String message) {
             super(message);
         }
     }
-
+// Método para leer la clave API desde un archivo de configuración
     private static String readApiKey() {
         Properties properties = new Properties();
         try (InputStream input = new FileInputStream(CONFIG_FILE_PATH)) {
